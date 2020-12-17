@@ -187,13 +187,13 @@ namespace UnityEngine.GUIExtensions
 
         public static string DelayedTextField(string value, params GUILayoutOption[] options)
         {
-            string current  ;
+            string current;
             return DelayedTextField(value, out current, null, options);
         }
 
         public static string DelayedTextField(string value, GUIStyle style, params GUILayoutOption[] options)
         {
-            string current  ;
+            string current;
             return DelayedTextField(value, out current, style, options);
         }
 
@@ -753,11 +753,80 @@ namespace UnityEngine.GUIExtensions
             return maskValue;
         }
 
+        #region ScrollView
 
+        class ScrollViewState
+        {
+            public Vector2 scrollPosition;
+        }
+
+        
+        public static void ScrollView<T>(bool alwaysShowHorizontal, bool alwaysShowVertical, Vector2 viewSize, IEnumerable<T> items, Func<T, int, Vector2> getItemSize, Action<T, int> onItemGUI, params GUILayoutOption[] options)
+        {
+            int ctrlId = GUIUtility.GetControlID(typeof(ScrollViewState).GetHashCode(), FocusType.Passive);
+            ScrollViewState state = (ScrollViewState)GUIUtility.GetStateObject(typeof(ScrollViewState), ctrlId);
+
+            Vector2 offset = new Vector2();
+            int index = 0;
+
+            Vector2? enterPos = null, exitPos = null;
+            using (var sv = new GUILayout.ScrollViewScope(state.scrollPosition, alwaysShowHorizontal, alwaysShowVertical, options))
+            {
+                state.scrollPosition = sv.scrollPosition;
+                Rect rect = new Rect();
+                rect.x = state.scrollPosition.x;
+                rect.y = state.scrollPosition.y;
+                rect.width = viewSize.x;
+                rect.height = viewSize.y;
+                bool inRange = false;
+                Vector2 itemSize;
+
+                foreach (var item in items)
+                {
+                    itemSize = getItemSize(item, index);
+
+                    if (exitPos == null)
+                    {
+                        inRange = false;
+                        if (offset.y >= rect.yMin && offset.y + itemSize.y <= rect.yMax)
+                        {
+                            inRange = true;
+                        }
+                        if (inRange)
+                        {
+                            if (enterPos == null)
+                            {
+                                enterPos = offset;
+                                GUILayout.Space(enterPos.Value.y);
+                            }
+                            onItemGUI(item, index);
+                        }
+                        else
+                        {
+                            if (enterPos != null && exitPos == null)
+                            {
+                                exitPos = offset;
+                            }
+                        }
+                    }
+                    offset += itemSize;
+                    index++;
+                }
+
+                if (exitPos != null)
+                {
+                    GUILayout.Space(offset.y - exitPos.Value.y);
+                }
+            }
+
+        }
+
+
+        #endregion
 
     }
 
-    
+
 
 
 

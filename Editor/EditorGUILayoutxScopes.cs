@@ -10,11 +10,13 @@ namespace UnityEditor.GUIExtensions
         public class Scopes
         {
 
-            public class FoldoutHeaderGroupScope : GUI.Scope
+            public class FoldoutHeaderGroupScope : IDisposable //: GUI.Scope
             {
-                public FoldoutHeaderGroupScope(bool initValue, GUIContent label, Action onShow = null, Action onHide = null)
+                private FoldoutHeaderGroupState state;
+                private Scopes.IndentLevelVerticalScope indent;
+                public FoldoutHeaderGroupScope(bool initValue, GUIContent label, GUIStyle style = null, Action<Rect> menuAction = null, GUIStyle menuIcon = null, Action onShow = null, Action onHide = null, Action onGUI = null)
                 {
-                    var state = (FoldoutHeaderGroupState)GUIUtility.GetStateObject(typeof(FoldoutHeaderGroupState), GUIUtility.GetControlID(FocusType.Passive));
+                    state = (FoldoutHeaderGroupState)GUIUtility.GetStateObject(typeof(FoldoutHeaderGroupState), GUIUtility.GetControlID(typeof(FoldoutHeaderGroupState).GetHashCode(), FocusType.Passive));
                     if (!state.initialized)
                     {
                         state.initialized = true;
@@ -25,23 +27,43 @@ namespace UnityEditor.GUIExtensions
                         }
                     }
                     var oldValue = state.value;
-                    state.value = EditorGUILayout.BeginFoldoutHeaderGroup(state.value, label);
-                    Visiable = state.value;
-                    if (oldValue != state.value)
+                    using (new GUILayout.HorizontalScope())
                     {
-                        if (state.value)
-                            onShow?.Invoke();
-                        else
-                            onHide?.Invoke();
+                        state.value = EditorGUILayout.BeginFoldoutHeaderGroup(state.value, label, style, menuAction, menuIcon);
+                        Visiable = state.value;
+                        if (oldValue != state.value)
+                        {
+                            if (state.value)
+                                onShow?.Invoke();
+                            else
+                                onHide?.Invoke();
+                        }
+                        EditorGUILayout.EndFoldoutHeaderGroup();
+
+                        onGUI?.Invoke();
                     }
-                    EditorGUILayout.EndFoldoutHeaderGroup();
+                    indent = new Scopes.IndentLevelVerticalScope();
                 }
 
-                public bool Visiable { get; private set; }
-                protected override void CloseScope()
+                public bool Visiable
                 {
-                    //EditorGUILayout.EndFoldoutHeaderGroup();
+                    get => state.value;
+                    set => state.value = value;
                 }
+
+                public void Dispose()
+                {
+                    if (indent != null)
+                    {
+                        indent.Dispose();
+                        indent = null;
+                    }
+                }
+                //protected override void CloseScope()
+                //{
+                //    //EditorGUILayout.EndFoldoutHeaderGroup();
+                //}
+
             }
 
 

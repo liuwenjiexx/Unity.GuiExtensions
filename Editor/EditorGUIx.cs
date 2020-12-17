@@ -38,6 +38,35 @@ namespace UnityEditor.GUIExtensions
                 return unityVersion;
             }
         }
+
+
+
+        private static Texture2D defaultCheckerGray;
+        public static Texture2D DefaultCheckerGray
+        {
+            get
+            {
+                if (!defaultCheckerGray)
+                {
+                    defaultCheckerGray = FindBuiltinExtraResources<Texture2D>("Default-Checker-Gray");
+                }
+                return defaultCheckerGray;
+            }
+        }
+
+        public static T FindBuiltinExtraResources<T>(string assetName)
+            where T : UnityEngine.Object
+        {
+            foreach (T asset in AssetDatabase.LoadAllAssetsAtPath("Resources/unity_builtin_extra")
+                .Where(o => o is T))
+            {
+                if (assetName == asset.name)
+                    return asset;
+            }
+            return default(T);
+        }
+
+
         public static int GetLastControlId()
         {
             if (getLastControlIdField == null)
@@ -66,7 +95,7 @@ namespace UnityEditor.GUIExtensions
         public static string DelayedPlaceholderField(Rect rect, string text, out string current, GUIContent placeholder, GUIStyle textStyle = null, GUIStyle placeholderStyle = null)
         {
             return GUIx.DelayedPlaceholderField(rect, text, out current, placeholder, textStyle: textStyle, placeholderStyle: placeholderStyle,
-                   textField: o => EditorGUI.TextField(rect, o)) ;;
+                   textField: o => EditorGUI.TextField(rect, o)); ;
         }
 
 
